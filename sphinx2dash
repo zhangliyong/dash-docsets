@@ -1,0 +1,39 @@
+#!/bin/bash
+
+REPO_LIB=repo_lib
+
+. shFlags/src/shflags
+
+# define a 'name' command-line string flag
+DEFINE_string 'git' '' 'the git address' 'g'
+
+# parse the command-line
+FLAGS "$@" || exit 1
+eval set -- "${FLAGS_ARGV}"
+
+[ -d $REPO_LIB ] || mkdir $REPO_LIB
+
+name=`echo "${FLAGS_git}" | egrep -o '/[^/]*\.git'`
+name=${name#/}
+name=${name%.git}
+
+echo "project: $name"
+
+if [ ! -d ${REPO_LIB}/$name ]
+then
+    git clone --depth 1 ${FLAGS_git} ${REPO_LIB}/$name
+fi
+
+cd ${REPO_LIB}/$name/docs
+
+opts=" -D html_theme_options.nosidebar=1"
+
+if ! grep -E -e "$opts" Makefile >/dev/null
+then
+    sed "s/^SPHINXOPTS *=.*$/&${opts}/" Makefile > Makefile.dash
+else
+    cp Makefile Makefile.dash
+fi
+
+make -f Makefile.dash html
+doc2dash -n $name -A _build/html
