@@ -5,20 +5,27 @@ REPO_LIB=repo_lib
 . shFlags/src/shflags
 
 # define a 'name' command-line string flag
-DEFINE_string 'git' '' 'the git address' 'g'
+DEFINE_string 'git' '' 'the git url from github or other website' 'g'
 
 # parse the command-line
 FLAGS "$@" || exit 1
 eval set -- "${FLAGS_ARGV}"
 
+if [ -z ${FLAGS_git} ]
+then
+    echo "./sphinx2dash -h for help"
+    exit 1
+fi
+
 [ -d $REPO_LIB ] || mkdir $REPO_LIB
 
+# Get the project name from git url
 name=`echo "${FLAGS_git}" | egrep -o '/[^/]*\.git'`
 name=${name#/}
 name=${name%.git}
-
 echo "project: $name"
 
+# clone the project
 if [ ! -d ${REPO_LIB}/$name ]
 then
     git clone --depth 1 ${FLAGS_git} ${REPO_LIB}/$name
@@ -26,11 +33,12 @@ fi
 
 cd ${REPO_LIB}/$name/docs
 
-opts=" -D html_theme_options.nosidebar=1"
+nobaropts=" -D html_theme_options.nosidebar=1"
 
-if ! grep -E -e "$opts" Makefile >/dev/null
+# add nosidebar to makefile
+if ! grep -E -e "$nobaropts" Makefile >/dev/null
 then
-    sed "s/^SPHINXOPTS *=.*$/&${opts}/" Makefile > Makefile.dash
+    sed "s/^SPHINXOPTS *=.*$/&${nobaropts}/" Makefile > Makefile.dash
 else
     cp Makefile Makefile.dash
 fi
