@@ -31,7 +31,16 @@ then
     git clone --depth 1 ${FLAGS_git} ${REPO_LIB}/$name
 fi
 
-cd ${REPO_LIB}/$name/docs
+cd ${REPO_LIB}/$name
+
+for docs in "docs" "doc"
+do
+    if [[ -d "$docs" ]]
+    then
+        cd $docs
+        break
+    fi
+done
 
 nobaropts=" -D html_theme_options.nosidebar=1"
 
@@ -44,4 +53,11 @@ else
 fi
 
 make -f Makefile.dash html
-doc2dash -n $name -A _build/html
+for build in "_build" ".build"
+do
+    if [[ -d "$build" ]]
+    then
+        doc2dash -n $name -A $build/html
+        break
+    fi
+done
